@@ -607,6 +607,10 @@ class MediaItem {
   /// The HTTP headers to use when sending an HTTP request for [artUri].
   final Map<String, String>? artHeaders;
 
+  /// The cache key used to resolve art from the cache manager, which will use
+  /// [artUri] if this is not provided.
+  final String? artCacheKey;
+
   /// Whether this is playable (i.e. not a folder).
   final bool? playable;
 
@@ -639,6 +643,7 @@ class MediaItem {
     this.duration,
     this.artUri,
     this.artHeaders,
+    this.artCacheKey,
     this.playable = true,
     this.displayTitle,
     this.displaySubtitle,
@@ -973,8 +978,8 @@ class AudioService {
           _sendToPlatform(artUri.toFilePath());
         } else {
           // Try to load a cached file from memory.
-          final fileInfo =
-              await cacheManager.getFileFromMemory(artUri.toString());
+          final fileInfo = await cacheManager
+              .getFileFromMemory(mediaItem.artCacheKey ?? artUri.toString());
           final filePath = fileInfo?.file.path;
           if (operationId != _artFetchOperationId) {
             return;
@@ -1147,8 +1152,12 @@ class AudioService {
           final headers = mediaItem.artHeaders;
           final file = headers != null
               ? await cacheManager.getSingleFile(mediaItem.artUri!.toString(),
+                  key: mediaItem.artCacheKey ?? mediaItem.artUri!.toString(),
                   headers: headers)
-              : await cacheManager.getSingleFile(mediaItem.artUri!.toString());
+              : await cacheManager.getSingleFile(
+                  mediaItem.artUri!.toString(),
+                  key: mediaItem.artCacheKey ?? mediaItem.artUri!.toString(),
+                );
           return file.path;
         }
       }
